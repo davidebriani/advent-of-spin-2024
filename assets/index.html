@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Christmas Wishlists</title>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js" defer></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        html {
+            min-height: 100%;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to bottom, #004aad, #a2d4ec);
+            margin: 0;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        h1, h2 {
+            text-align: center;
+            margin: 20px;
+            color: #fff;
+            text-shadow: 2px 2px 5px #000;
+        }
+
+        h1 {
+            font-size: 3em;
+        }
+
+        h2 {
+            font-size: 1.8em;
+        }
+
+        form {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            color: #333;
+        }
+
+        form h2 {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background: #da291c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.3s ease;
+        }
+
+        button:hover {
+            background: #e84c3d;
+            transform: translateY(-2px);
+        }
+
+        .wishlist-container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .wishlist {
+            background: #f7f7f7;
+            margin: 15px 0;
+            padding: 15px;
+            border-left: 5px solid #da291c;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            color: #444;
+        }
+
+        .wishlist h3 {
+            margin: 0 0 10px;
+            color: #da291c;
+        }
+
+        .wishlist ul {
+            padding-left: 20px;
+            color: #333;
+        }
+
+        .snowflake {
+            position: fixed;
+            top: -20px;
+            z-index: 1000;
+            pointer-events: none;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-20px);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(120vh);
+                opacity: 0;
+            }
+        }
+
+        footer {
+            text-align: center;
+            margin: 20px 0;
+            color: #fff;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body x-data="wishlistApp()" x-init="init()">
+    <div id="snowflakes"></div>
+
+    <h1>🎄 Christmas Wishlists 🎁</h1>
+
+    <form @submit.prevent="addWishlist">
+        <h2>Add a New Wishlist</h2>
+        <label>
+            Name:
+            <input type="text" x-model="newWishlist.name" placeholder="Enter your name" required>
+        </label>
+        <label>
+            Items (comma-separated):
+            <input type="text" x-model="newWishlist.items" placeholder="e.g., Snow Globe, Chocolate Santa" required>
+        </label>
+        <button type="submit">Add Wishlist</button>
+    </form>
+
+    <div class="wishlist-container">
+        <h2>Wishlists</h2>
+        <template x-if="wishlists.length === 0">
+            <p style="text-align: center; color: #444;">No wishlists available. Add one to spread some cheer!</p>
+        </template>
+        <template x-for="wishlist in wishlists" :key="wishlist.name">
+            <div class="wishlist">
+                <h3 x-text="wishlist.name"></h3>
+                <ul>
+                    <template x-for="item in wishlist.items">
+                        <li x-text="item"></li>
+                    </template>
+                </ul>
+            </div>
+        </template>
+    </div>
+
+    <footer>
+        Made with ❤️ for the Christmas season
+    </footer>
+
+    <script>
+        function wishlistApp() {
+            return {
+                wishlists: [],
+                newWishlist: {
+                    name: '',
+                    items: ''
+                },
+                fetchWishlists() {
+                    fetch('/api/wishlists')
+                        .then(response => response.json())
+                        .then(data => this.wishlists = data.reverse())
+                        .catch(error => console.error('Error fetching wishlists:', error));
+                },
+                addWishlist() {
+                    const wishlist = {
+                        name: this.newWishlist.name,
+                        items: this.newWishlist.items.split(',').map(item => item.trim())
+                    };
+                    fetch('/api/wishlists', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(wishlist)
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            this.fetchWishlists();
+                            this.newWishlist.name = '';
+                            this.newWishlist.items = '';
+                            document.querySelector("form input").focus();
+                        } else {
+                            console.error('Error adding wishlist');
+                        }
+                    })
+                    .catch(error => console.error('Error during POST:', error));
+                },
+                createSnowEffect() {
+                    const snowflakes = document.getElementById('snowflakes');
+                    for (let i = 0; i < 100; i++) {
+                        const flake = document.createElement('div');
+                        flake.innerHTML = '❄';
+                        flake.className = 'snowflake';
+                        flake.style.width = `${Math.random() * 5 + 5}px`;
+                        flake.style.height = flake.style.width;
+                        flake.style.left = `${Math.random() * 100}vw`;
+                        flake.style.animationDuration = `${Math.random() * 5 + 5}s`;
+                        flake.style.animationDelay = `${Math.random() * 5}s`;
+                        flake.style.fontSize = `${Math.random()}em`;
+                        snowflakes.appendChild(flake);
+                    }
+                },
+                init() {
+                    this.fetchWishlists();
+                    this.createSnowEffect();
+                    document.querySelector("form input").focus();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
